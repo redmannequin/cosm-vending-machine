@@ -10,10 +10,10 @@ use crate::{
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    OWNER.save(deps.storage, &msg.owner)?;
+    OWNER.save(deps.storage, &info.sender)?;
     ITEM_COUNTS.save(deps.storage, Item::Chips.as_str(), &msg.chips_count)?;
     ITEM_COUNTS.save(deps.storage, Item::Chocolate.as_str(), &msg.chocolate_count)?;
     ITEM_COUNTS.save(deps.storage, Item::Snacks.as_str(), &msg.snacks_count)?;

@@ -50,7 +50,6 @@ mod tests {
                 code_id,
                 creator.clone(),
                 &InstantiateMsg {
-                    owner: creator.clone(),
                     snacks_count: 1,
                     chocolate_count: 2,
                     water_count: 3,
@@ -104,7 +103,6 @@ mod tests {
                 code_id,
                 creator.clone(),
                 &InstantiateMsg {
-                    owner: creator.clone(),
                     snacks_count: 1,
                     chocolate_count: 2,
                     water_count: 3,
@@ -145,7 +143,6 @@ mod tests {
                 code_id,
                 creator.clone(),
                 &InstantiateMsg {
-                    owner: creator.clone(),
                     snacks_count: 1,
                     chocolate_count: 2,
                     water_count: 3,
@@ -202,7 +199,6 @@ mod tests {
                 code_id,
                 creator.clone(),
                 &InstantiateMsg {
-                    owner: creator.clone(),
                     snacks_count: 0,
                     chocolate_count: 0,
                     water_count: 0,

@@ -31,21 +31,6 @@ retruns the available count for an item
 - `params`: an `Item`
 - `output`: an `unsigned int`
 
-request
-```json 
-{
-    "item": "snacks"
-}
-```
-
-response
-```json 
-{
-    "item": "snacks",
-    "count": 10
-}
-```
-
 ### `items`
 returns the list of items
 

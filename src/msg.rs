@@ -1,8 +1,9 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::CustomQuery;
+use cosmwasm_std::{Addr, CustomQuery};
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    pub owner: Addr,
     pub snacks_count: u32,
     pub chocolate_count: u32,
     pub water_count: u32,

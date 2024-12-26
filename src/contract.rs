@@ -4,7 +4,7 @@ use cosmwasm_std::{
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, Item, ItemCountResp, ItemsResp, QueryMsg},
-    state::ITEM_COUNTS,
+    state::{ITEM_COUNTS, OWNER},
 };
 
 pub fn instantiate(
@@ -13,6 +13,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
+    OWNER.save(deps.storage, &msg.owner)?;
     ITEM_COUNTS.save(deps.storage, Item::Chips.as_str(), &msg.chips_count)?;
     ITEM_COUNTS.save(deps.storage, Item::Chocolate.as_str(), &msg.chocolate_count)?;
     ITEM_COUNTS.save(deps.storage, Item::Snacks.as_str(), &msg.snacks_count)?;
@@ -35,23 +36,27 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn execute(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
     match msg {
         ExecuteMsg::GetItem { item } => {
             let count = ITEM_COUNTS.load(deps.storage, item.as_str())?;
             if count == 0 {
-                Err(StdError::generic_err("Empty"))
+                Err(StdError::generic_err("empty"))
             } else {
                 ITEM_COUNTS.save(deps.storage, item.as_str(), &(count - 1))?;
                 Ok(Response::new())
             }
         }
         ExecuteMsg::Refill { item, count } => {
-            let curr_count = ITEM_COUNTS.load(deps.storage, item.as_str())?;
-            ITEM_COUNTS.save(deps.storage, item.as_str(), &(curr_count + count))?;
-            Ok(Response::new())
+            if info.sender == OWNER.load(deps.storage)? {
+                let curr_count = ITEM_COUNTS.load(deps.storage, item.as_str())?;
+                ITEM_COUNTS.save(deps.storage, item.as_str(), &(curr_count + count))?;
+                Ok(Response::new())
+            } else {
+                Err(StdError::generic_err("unauthorized"))
+            }
         }
     }
 }

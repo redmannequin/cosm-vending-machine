@@ -2,10 +2,8 @@ mod contract;
 pub mod msg;
 mod state;
 
-use cosmwasm_std::{
-    entry_point, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
-};
-use msg::{InstantiateMsg, QueryMsg};
+use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 #[entry_point]
 pub fn instantiate(
@@ -23,15 +21,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[entry_point]
-pub fn execute(_deps: DepsMut, _env: Env, _info: MessageInfo, _msg: Empty) -> StdResult<Response> {
-    unimplemented!()
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+    contract::execute(deps, env, info, msg)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
         execute, instantiate,
-        msg::{InstantiateMsg, Item, ItemCountResp, ItemsResp, QueryMsg},
+        msg::{ExecuteMsg, InstantiateMsg, Item, ItemCountResp, ItemsResp, QueryMsg},
         query,
     };
     use cosmwasm_std::testing::mock_dependencies;
@@ -128,4 +126,64 @@ mod tests {
             }
         )
     }
+
+    #[test]
+    fn get_item_exec() {
+        let deps = mock_dependencies();
+        let creator = deps.api.addr_make("creator");
+        let other = deps.api.addr_make("other");
+
+        let mut app = App::default();
+
+        let code = ContractWrapper::new(execute, instantiate, query);
+        let code_id = app.store_code(Box::new(code));
+
+        let addr = app
+            .instantiate_contract(
+                code_id,
+                creator.clone(),
+                &InstantiateMsg {
+                    snacks_count: 1,
+                    chocolate_count: 2,
+                    water_count: 3,
+                    chips_count: 4,
+                },
+                &[],
+                "Contract",
+                None,
+            )
+            .expect("failed to setup contract");
+
+        app.execute_contract(
+            other,
+            addr.clone(),
+            &ExecuteMsg::GetItem { item: Item::Snacks },
+            &[],
+        )
+        .expect("failed to get_item(snacks) for other");
+
+        let resp: ItemCountResp = app
+            .wrap()
+            .query_wasm_smart(addr.clone(), &QueryMsg::ItemCount { item: Item::Snacks })
+            .expect("failed to query contract");
+
+        assert_eq!(
+            resp,
+            ItemCountResp {
+                item: Item::Snacks,
+                count: 0
+            }
+        );
+
+        app.execute_contract(
+            creator,
+            addr.clone(),
+            &ExecuteMsg::GetItem { item: Item::Snacks },
+            &[],
+        )
+        .expect_err("removing from an empty item should fail");
+    }
+
+    #[test]
+    fn refill_exec() {}
 }

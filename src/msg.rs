@@ -29,6 +29,12 @@ pub struct ItemsResp {
 }
 
 #[cw_serde]
+pub enum ExecuteMsg {
+    GetItem { item: Item },
+    Refill { item: Item, count: u32 },
+}
+
+#[cw_serde]
 #[derive(Copy)]
 pub enum Item {
     Snacks,

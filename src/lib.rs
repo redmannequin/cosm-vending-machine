@@ -1,13 +1,19 @@
 mod contract;
 pub mod msg;
+mod state;
 
 use cosmwasm_std::{
     entry_point, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
 };
-use msg::QueryMsg;
+use msg::{InstantiateMsg, QueryMsg};
 
 #[entry_point]
-pub fn instantiate(deps: DepsMut, env: Env, info: MessageInfo, msg: Empty) -> StdResult<Response> {
+pub fn instantiate(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: InstantiateMsg,
+) -> StdResult<Response> {
     contract::instantiate(deps, env, info, msg)
 }
 
@@ -25,10 +31,10 @@ pub fn execute(_deps: DepsMut, _env: Env, _info: MessageInfo, _msg: Empty) -> St
 mod tests {
     use crate::{
         execute, instantiate,
-        msg::{ItemCountResp, ItemsResp, QueryMsg},
+        msg::{InstantiateMsg, Item, ItemCountResp, ItemsResp, QueryMsg},
         query,
     };
-    use cosmwasm_std::{testing::mock_dependencies, Empty};
+    use cosmwasm_std::testing::mock_dependencies;
     use cw_multi_test::{App, ContractWrapper, Executor};
 
     #[test]
@@ -42,15 +48,46 @@ mod tests {
         let code_id = app.store_code(Box::new(code));
 
         let addr = app
-            .instantiate_contract(code_id, creator, &Empty {}, &[], "Contract", None)
+            .instantiate_contract(
+                code_id,
+                creator,
+                &InstantiateMsg {
+                    snacks_count: 1,
+                    chocolate_count: 2,
+                    water_count: 3,
+                    chips_count: 4,
+                },
+                &[],
+                "Contract",
+                None,
+            )
             .expect("failed to setup contract");
 
         let resp: ItemCountResp = app
             .wrap()
-            .query_wasm_smart(addr, &QueryMsg::ItemCount)
+            .query_wasm_smart(addr.clone(), &QueryMsg::ItemCount { item: Item::Snacks })
             .expect("failed to query contract");
 
-        assert_eq!(resp, ItemCountResp { count: 0 })
+        assert_eq!(
+            resp,
+            ItemCountResp {
+                item: Item::Snacks,
+                count: 1
+            }
+        );
+
+        let resp: ItemCountResp = app
+            .wrap()
+            .query_wasm_smart(addr, &QueryMsg::ItemCount { item: Item::Chips })
+            .expect("failed to query contract");
+
+        assert_eq!(
+            resp,
+            ItemCountResp {
+                item: Item::Chips,
+                count: 4
+            }
+        )
     }
 
     #[test]
@@ -64,14 +101,31 @@ mod tests {
         let code_id = app.store_code(Box::new(code));
 
         let addr = app
-            .instantiate_contract(code_id, creator, &Empty {}, &[], "Contract", None)
+            .instantiate_contract(
+                code_id,
+                creator,
+                &InstantiateMsg {
+                    snacks_count: 1,
+                    chocolate_count: 2,
+                    water_count: 3,
+                    chips_count: 4,
+                },
+                &[],
+                "Contract",
+                None,
+            )
             .expect("failed to setup contract");
 
-        let resp: ItemCountResp = app
+        let resp: ItemsResp = app
             .wrap()
             .query_wasm_smart(addr, &QueryMsg::Itmes)
             .expect("failed to query contract");
 
-        assert_eq!(resp, ItemsResp { items: [] })
+        assert_eq!(
+            resp,
+            ItemsResp {
+                items: [Item::Snacks, Item::Chocolate, Item::Water, Item::Chips]
+            }
+        )
     }
 }

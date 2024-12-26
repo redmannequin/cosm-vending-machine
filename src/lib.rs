@@ -185,5 +185,77 @@ mod tests {
     }
 
     #[test]
-    fn refill_exec() {}
+    fn refill_exec() {
+        let deps = mock_dependencies();
+        let creator = deps.api.addr_make("creator");
+        let other = deps.api.addr_make("other");
+        let mut app = App::default();
+
+        let code = ContractWrapper::new(execute, instantiate, query);
+        let code_id = app.store_code(Box::new(code));
+
+        let addr = app
+            .instantiate_contract(
+                code_id,
+                creator.clone(),
+                &InstantiateMsg {
+                    snacks_count: 0,
+                    chocolate_count: 0,
+                    water_count: 0,
+                    chips_count: 0,
+                },
+                &[],
+                "Contract",
+                None,
+            )
+            .expect("failed to setup contract");
+
+        app.execute_contract(
+            other,
+            addr.clone(),
+            &ExecuteMsg::Refill {
+                item: Item::Chips,
+                count: 5,
+            },
+            &[],
+        )
+        .expect_err("No addr other than the creator should be allowed to refill");
+
+        let resp: ItemCountResp = app
+            .wrap()
+            .query_wasm_smart(addr.clone(), &QueryMsg::ItemCount { item: Item::Chips })
+            .expect("failed to query contract");
+
+        assert_eq!(
+            resp,
+            ItemCountResp {
+                item: Item::Chips,
+                count: 0
+            }
+        );
+
+        app.execute_contract(
+            creator,
+            addr.clone(),
+            &ExecuteMsg::Refill {
+                item: Item::Chips,
+                count: 5,
+            },
+            &[],
+        )
+        .expect("failed to refill item");
+
+        let resp: ItemCountResp = app
+            .wrap()
+            .query_wasm_smart(addr.clone(), &QueryMsg::ItemCount { item: Item::Chips })
+            .expect("failed to query contract");
+
+        assert_eq!(
+            resp,
+            ItemCountResp {
+                item: Item::Chips,
+                count: 5
+            }
+        );
+    }
 }
